@@ -1,26 +1,36 @@
 const bcrypt = require('bcryptjs');
-const supabase = require('./supabaseClient');
+const { connectDB, client } = require('./mongoClient');
 
-async function createAdmin() {
-  const email = 'admin@example.com';
-  const plainPassword = 'admin123';
+async function createAdmin(email, plainPassword) {
+  try {
+    await connectDB();
+    const db = client.db('portfolio'); // Replace with your database name
+    const collection = db.collection('admins');
 
-  // 1. Hash the password
-  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-  // 2. Insert into Supabase
-  const { data, error } = await supabase.from('admins').insert([
-    {
-      email,
-      password: hashedPassword,
-    },
-  ]);
+    // Insert into MongoDB
+    const result = await collection.insertOne({ email, password: hashedPassword });
 
-  if (error) {
+    // Check if the insertion was successful
+    if (result.insertedId) {
+      console.log('✅ Admin created with ID:', result.insertedId);
+      return { _id: result.insertedId, email, password: hashedPassword };
+    } else {
+      throw new Error('Failed to create admin: No inserted ID returned');
+    }
+  } catch (error) {
     console.error('❌ Error creating admin:', error.message);
-  } else {
-    console.log('✅ Admin created:', data);
+    throw error;
   }
 }
 
-createAdmin();
+// Example usage
+(async () => {
+  try {
+    await createAdmin('admin@example.com', 'admin123');
+  } catch (error) {
+    console.error('Failed to create admin:', error);
+  }
+})();

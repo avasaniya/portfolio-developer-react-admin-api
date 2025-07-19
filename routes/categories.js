@@ -1,21 +1,41 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../supabaseClient');
 const verifyAdmin = require('../middleware/verifyAdmin');
-
+const Category = require('../models/Category');
+ 
 // Get All Categories
 router.get('/', async (req, res) => {
-  const { data, error } = await supabase.from('categories').select('*');
-  if (error) return res.status(500).json({ error: error.message, status: 'error' });
-  res.json({ data, status: 'success' });
+  try {
+    const categories = await Category.find();
+    res.json({ data: categories, status: 'success' });
+  } catch (error) {
+    res.status(500).json({ error: error.message, status: 'error' });
+  }
 });
 
 // Add Category (Admin only)
 router.post('/', verifyAdmin, async (req, res) => {
   const { name, description } = req.body;
-  const { data, error } = await supabase.from('categories').insert([{ name, description }]).select();
-  if (error) return res.status(500).json({ error: error.message, status: 'error' });
-  res.status(201).json({ data: data[0], status: 'success' });
+
+  try {
+    const category = new Category({ name, description });
+    await category.save();
+    res.status(201).json({ data: category, status: 'success' });
+  } catch (error) {
+    if (error.code === 11000) {
+      // Handle duplicate key error
+      res.status(400).json({
+        error: 'A category with this name already exists.',
+        status: 'error'
+      });
+    } else {
+      // Handle other errors
+      res.status(500).json({
+        error: error.message,
+        status: 'error'
+      });
+    }
+  }
 });
 
 
@@ -23,35 +43,39 @@ router.post('/', verifyAdmin, async (req, res) => {
 router.post('/:id', verifyAdmin, async (req, res) => {
   const { id } = req.params;
   const { name, description } = req.body;
-  const { data, error } = await supabase
-    .from('categories')
-    .update({ name, description })
-    .eq('id', id)
-    .select();
-  if (error) return res.status(500).json({ error: error.message, status: 'error' });
-  if (!data || data.length === 0) return res.status(404).json({ error: 'Category not found', status: 'error' });
-  res.json({ data: data[0], status: 'success' });
+  try {
+    const category = await Category.findByIdAndUpdate(
+      id,
+      { name, description },
+      { new: true }
+    );
+    if (!category) return res.status(404).json({ error: 'Category not found', status: 'error' });
+    res.json({ data: category, status: 'success' });
+  } catch (error) {
+    res.status(500).json({ error: error.message, status: 'error' });
+  }
 });
 
-
+// Delete Category (Admin only)
 router.delete('/:id', verifyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { error } = await supabase.from('categories').delete().eq('id', id);
-  if (error) return res.status(500).json({ error: error.message, status: 'error' });
-  res.json({ message: 'Category deleted', status: 'success' });
+  try {
+    await Category.findByIdAndDelete(id);
+    res.json({ message: 'Category deleted', status: 'success' });
+  } catch (error) {
+    res.status(500).json({ error: error.message, status: 'error' });
+  }
 });
 
 // Get Items by Category ID
-router.get('/:id/items', async (req, res) => {
+router.get('/:id', async (req, res) => {
   const { id } = req.params;
-  // Replace 'items' with your actual table name if different
-  const { data, error } = await supabase
-    .from('items')
-    .select('*')
-    .eq('category_id', id);
-  if (error) return res.status(500).json({ error: error.message, status: 'error' });
-  res.json({ data, status: 'success' });
+  try {
+    const items = await Category.find({ _id: id });
+    res.json({ data: items, status: 'success', message: 'Items fetched successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message, status: 'error' });
+  }
 });
-
 
 module.exports = router;
