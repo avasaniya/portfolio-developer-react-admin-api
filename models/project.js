@@ -1,29 +1,21 @@
 const mongoose = require('mongoose');
 
-const screenshotSchema = new mongoose.Schema({
-  url: { type: String, required: true },
-  caption: { type: String }
-});
-
+ 
+// Define project schema
 const projectSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  category_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
-  screenshots: [screenshotSchema],
+  description: { type: String }, // Additional field for project description
+  category_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true, index: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
-  status: { type: String, enum: ['planning', 'in-progress', 'completed', 'on-hold'], default: 'planning' },
+  status: { type: String, enum: ['planning', 'in-progress', 'completed', 'on-hold'], default: 'planning', index: true },
   startDate: { type: Date },
   endDate: { type: Date },
-  budget: { type: Number },
-  projectManager: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  teamMembers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   tags: [{ type: String }],
-  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-  client: { type: String },
-  clientContact: { type: String },
   projectUrl: { type: String },
-  repositoryUrl: { type: String },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  isDeleted: { type: Boolean, default: false },
+  images: [{ type: String }] 
 });
 
 // Middleware to update the `updatedAt` field before saving
