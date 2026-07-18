@@ -39,11 +39,11 @@ router.get('/category/:id', async (req, res) => {
   }
 });
 
- // Add Project (Admin only) with image upload
+// Add Project (Admin only) with image upload
 router.post('/', verifyAdmin, upload.array('images'), async (req, res) => {
   try {
     console.log('Files received:', req.files); // Log received files
-    const imagePaths = req.files.map(file => path.normalize(file.path).replace(/\\/g, '/')); // Normalize paths
+    const imagePaths = req.files ? req.files.map(file => path.normalize(file.path).replace(/\\/g, '/')) : []; // Normalize paths
     console.log('Image paths:', imagePaths); // Log image paths
     const projectData = {
       ...req.body,

@@ -67,12 +67,15 @@ router.delete('/:id', verifyAdmin, async (req, res) => {
   }
 });
 
-// Get Items by Category ID
+// Get Category by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const items = await Category.find({ _id: id });
-    res.json({ data: items, status: 'success', message: 'Items fetched successfully' });
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found', status: 'error' });
+    }
+    res.json({ data: category, status: 'success', message: 'Category fetched successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message, status: 'error' });
   }
